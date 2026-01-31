@@ -61,12 +61,12 @@ class LM:
         elif self.model_type == "openai":
             import openai
             api_key = model_args.get('api_key') or os.getenv("OPENAI_API_KEY")
-            base_url = model_args.get('base_url') or os.getenv("OPENAI_BASE_URL")
+            base_url = model_args.get('base_url') or os.getenv("OPENAI_BASE_URL") or None
             self.client = openai.OpenAI(api_key=api_key, base_url=base_url)
         elif self.model_type == "anthropic":
             import anthropic
             api_key = model_args.get('api_key') or os.getenv("ANTHROPIC_API_KEY")
-            base_url = model_args.get('base_url') or os.getenv("ANTHROPIC_BASE_URL")
+            base_url = model_args.get('base_url') or os.getenv("ANTHROPIC_BASE_URL") or None
             self.client = anthropic.Anthropic(api_key=api_key, base_url=base_url)
         elif self.model_type == "vllm_server":
             pass
