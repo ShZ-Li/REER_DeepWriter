@@ -58,6 +58,7 @@ Update your `config.yaml` to use API-based models:
 model:
   model_type: "openai"
   model_name: "gpt-4o"  # or any OpenAI model name
+  tokenizer_name: "Qwen/Qwen2.5-7B-Instruct"  # Optional: tokenizer for prompt formatting
   model_args:
     max_tokens: 8000
     top_p: 0.85
@@ -72,6 +73,7 @@ model:
 model:
   model_type: "anthropic"
   model_name: "claude-3-5-sonnet-20241022"  # or any Anthropic model name
+  tokenizer_name: "Qwen/Qwen2.5-7B-Instruct"  # Optional: tokenizer for prompt formatting
   model_args:
     max_tokens: 8000
     top_p: 0.85
@@ -79,6 +81,20 @@ model:
     api_key: "sk-ant-your-api-key"  # Optional if ANTHROPIC_API_KEY env var is set
     base_url: "https://api.anthropic.com"  # Optional
   prompt_type: "tokenizer"
+```
+
+### Running with API Models
+
+When using API-based models, you don't need to specify `--port` or `--model` arguments:
+
+```bash
+export workdir=${pwd}
+export rank=0 
+export total=1
+export cname=/path/to/config_with_api_model.yaml
+
+# For API models, --port and --model are optional
+python synthesize.py --config_file $cname --rank $rank --total-ranks $total
 ```
 
 ### Environment Variables

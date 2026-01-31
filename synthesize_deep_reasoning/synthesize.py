@@ -792,17 +792,45 @@ def main(args: argparse.Namespace):
     # Load models and tokenizers
     print("Loading models and tokenizers...")
     global lm_tokenizer, lm_model, post_model, post_tokenizer
-    config["model"]["model_args"]["port"] = args.port
-    config["judge_model"]["model_args"]["port"] = f"2{args.port}"
-    config["model"]["model_name"] = args.model 
-    if args.posterior_model!="":
+    
+    # Check if using API-based models
+    model_type = config["model"]["model_type"]
+    is_api_model = model_type in ["openai", "anthropic"]
+    
+    # Only set port for non-API models
+    if not is_api_model and args.port is not None:
+        config["model"]["model_args"]["port"] = args.port
+    
+    judge_model_type = config["judge_model"]["model_type"]
+    is_api_judge_model = judge_model_type in ["openai", "anthropic"]
+    if not is_api_judge_model and args.port is not None:
+        config["judge_model"]["model_args"]["port"] = f"2{args.port}"
+    
+    # Override model name from command line if provided
+    if args.model:
+        config["model"]["model_name"] = args.model 
+    if args.posterior_model:
         config["judge_model"]["model_name"] = args.posterior_model 
-    lm_tokenizer = transformers.AutoTokenizer.from_pretrained(
-        config["model"]["model_name"],
-        use_fast=True,
-        padding_side="right",
-        truncation_side="right",
-    )
+    
+    # Load tokenizer - for API models, use a default tokenizer for prompt formatting
+    if is_api_model:
+        # For API models, use a default tokenizer (Qwen2.5-7B-Instruct) for chat template formatting
+        default_tokenizer_name = config["model"].get("tokenizer_name", "Qwen/Qwen2.5-7B-Instruct")
+        print(f"Using default tokenizer '{default_tokenizer_name}' for API model prompt formatting")
+        lm_tokenizer = transformers.AutoTokenizer.from_pretrained(
+            default_tokenizer_name,
+            use_fast=True,
+            padding_side="right",
+            truncation_side="right",
+        )
+    else:
+        lm_tokenizer = transformers.AutoTokenizer.from_pretrained(
+            config["model"]["model_name"],
+            use_fast=True,
+            padding_side="right",
+            truncation_side="right",
+        )
+    
     lm_model = LM(
         model_type=config["model"]["model_type"],
         model_name=config["model"]["model_name"],
@@ -812,12 +840,23 @@ def main(args: argparse.Namespace):
         **config["model"]["model_args"],
     )
     if config["judge_model"]["use"]:
-        post_tokenizer = transformers.AutoTokenizer.from_pretrained(
-            config["judge_model"]["model_name"],
-            use_fast=True,
-            padding_side="right",
-            truncation_side="right",
-        )
+        if is_api_judge_model:
+            # For API judge models, use a default tokenizer
+            default_tokenizer_name = config["judge_model"].get("tokenizer_name", "Qwen/Qwen2.5-7B-Instruct")
+            print(f"Using default tokenizer '{default_tokenizer_name}' for API judge model")
+            post_tokenizer = transformers.AutoTokenizer.from_pretrained(
+                default_tokenizer_name,
+                use_fast=True,
+                padding_side="right",
+                truncation_side="right",
+            )
+        else:
+            post_tokenizer = transformers.AutoTokenizer.from_pretrained(
+                config["judge_model"]["model_name"],
+                use_fast=True,
+                padding_side="right",
+                truncation_side="right",
+            )
         post_model = LM(
             model_type=config["judge_model"]["model_type"],
             model_name=config["judge_model"]["model_name"],
@@ -871,9 +910,9 @@ def main(args: argparse.Namespace):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run language model generation and refinement pipeline.")
     parser.add_argument("--config_file", type=str, help="Path to the YAML configuration file.")
-    parser.add_argument("--model", type=str, required=True, help="Path to generator.")
-    parser.add_argument("--posterior_model", type=str, default="", help="Path to generator.")
-    parser.add_argument("--port", type=int, required=True, help="Port.")
+    parser.add_argument("--model", type=str, default="", help="Path to generator model. If not provided, uses model_name from config.")
+    parser.add_argument("--posterior_model", type=str, default="", help="Path to posterior/judge model. If not provided, uses model_name from config.")
+    parser.add_argument("--port", type=int, default=None, help="Port for vLLM server. Not required for API models (openai, anthropic).")
     parser.add_argument("--rank", type=int, required=True, help="Rank of the current process.")
     parser.add_argument("--total-ranks", type=int, required=True, help="Total number of parallel processes.")
     parser.add_argument("--num-cpus", type=int, default=32, help="Number of CPUs to allocate for Ray.")

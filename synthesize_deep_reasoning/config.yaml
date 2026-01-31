@@ -15,6 +15,7 @@ model:
   model_type: "vllm_server"
   model_name: "/path/to/Qwen2___5-32B-Instruct"
   model_url: "http://127.0.0.1:8701/v1/completions"
+  # tokenizer_name: "Qwen/Qwen2.5-7B-Instruct"  # Optional: for API models, specify tokenizer for prompt formatting
   model_args:
     beamsearch: 0
     port: 5757
@@ -33,6 +34,7 @@ judge_model:
   model_type: "vllm_server"
   model_name: "/path/to/model/for/perplexity"
   model_url: "http://127.0.0.1:8701/v1/completions"
+  # tokenizer_name: "Qwen/Qwen2.5-7B-Instruct"  # Optional: for API models, specify tokenizer for prompt formatting
   model_args:
     beamsearch: 0
     port: 5757
@@ -46,6 +48,7 @@ judge_model:
 # model:
 #   model_type: "openai"
 #   model_name: "gpt-4o"
+#   tokenizer_name: "Qwen/Qwen2.5-7B-Instruct"  # Tokenizer for prompt formatting (default if not specified)
 #   model_args:
 #     max_tokens: 8000
 #     top_p: 0.85
@@ -58,6 +61,7 @@ judge_model:
 # model:
 #   model_type: "anthropic"
 #   model_name: "claude-3-5-sonnet-20241022"
+#   tokenizer_name: "Qwen/Qwen2.5-7B-Instruct"  # Tokenizer for prompt formatting (default if not specified)
 #   model_args:
 #     max_tokens: 8000
 #     top_p: 0.85
