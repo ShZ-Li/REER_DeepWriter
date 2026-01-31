@@ -88,7 +88,7 @@ model:
 When using API-based models, you don't need to specify `--port` or `--model` arguments:
 
 ```bash
-export workdir=${pwd}
+export workdir=$(pwd)
 export rank=0 
 export total=1
 export cname=/path/to/config_with_api_model.yaml
