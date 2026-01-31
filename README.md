@@ -24,7 +24,7 @@ cd folder: `synthesize_deep_reasoning`
     ```
   Json format: a list of dicts, where each dict has three keys, `question`, `solution`, `index`
 
-- **Step 1: Start the vLLM server.**
+- **Step 1: Start the vLLM server (for vllm_server model type).**
   ```bash 
   export model=/path/to/generator
   export model2=/path/to/basemodel/for/PPL
@@ -44,3 +44,67 @@ cd folder: `synthesize_deep_reasoning`
   bash synthesis.sh
   ```
   The synthesized trajectories will be dumped to the `file_prefix` path. 
+
+## Using API-based Models (OpenAI, Anthropic, etc.)
+
+Instead of deploying models locally, you can use API-based models like OpenAI or Anthropic for the generator model.
+
+### Configuration
+
+Update your `config.yaml` to use API-based models:
+
+**For OpenAI:**
+```yaml
+model:
+  model_type: "openai"
+  model_name: "gpt-4o"  # or any OpenAI model name
+  model_args:
+    max_tokens: 8000
+    top_p: 0.85
+    temperature_range: [0.8, 0.8]
+    api_key: "sk-your-api-key"  # Optional if OPENAI_API_KEY env var is set
+    base_url: "https://api.openai.com/v1"  # Optional, customize for OpenAI-compatible APIs
+  prompt_type: "tokenizer"
+```
+
+**For Anthropic:**
+```yaml
+model:
+  model_type: "anthropic"
+  model_name: "claude-3-5-sonnet-20241022"  # or any Anthropic model name
+  model_args:
+    max_tokens: 8000
+    top_p: 0.85
+    temperature_range: [0.8, 0.8]
+    api_key: "sk-ant-your-api-key"  # Optional if ANTHROPIC_API_KEY env var is set
+    base_url: "https://api.anthropic.com"  # Optional
+  prompt_type: "tokenizer"
+```
+
+### Environment Variables
+
+You can set API keys and base URLs via environment variables:
+
+```bash
+# For OpenAI
+export OPENAI_API_KEY="sk-your-api-key"
+export OPENAI_BASE_URL="https://api.openai.com/v1"  # Optional
+
+# For Anthropic
+export ANTHROPIC_API_KEY="sk-ant-your-api-key"
+export ANTHROPIC_BASE_URL="https://api.anthropic.com"  # Optional
+```
+
+### Supported Model Types
+
+- `hf` - HuggingFace local models
+- `vllm` - vLLM local inference
+- `vllm_server` - vLLM server (default)
+- `openai` - OpenAI API (also supports OpenAI-compatible APIs)
+- `anthropic` - Anthropic API
+
+### Notes
+
+1. When using API-based models, the `port` parameter in `model_args` is not required.
+2. API-based models do not provide token-level log probabilities, so the perplexity-based refinement features will have limited functionality.
+3. The `base_url` parameter allows you to use OpenAI-compatible APIs (e.g., Azure OpenAI, local API servers). 

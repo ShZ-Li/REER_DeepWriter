@@ -60,10 +60,14 @@ class LM:
             )
         elif self.model_type == "openai":
             import openai
-            self.client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+            api_key = model_args.get('api_key') or os.getenv("OPENAI_API_KEY")
+            base_url = model_args.get('base_url') or os.getenv("OPENAI_BASE_URL")
+            self.client = openai.OpenAI(api_key=api_key, base_url=base_url)
         elif self.model_type == "anthropic":
             import anthropic
-            self.client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+            api_key = model_args.get('api_key') or os.getenv("ANTHROPIC_API_KEY")
+            base_url = model_args.get('base_url') or os.getenv("ANTHROPIC_BASE_URL")
+            self.client = anthropic.Anthropic(api_key=api_key, base_url=base_url)
         elif self.model_type == "vllm_server":
             pass
         else:
@@ -79,7 +83,7 @@ class LM:
         elif self.model_type == "hf":
             return self.generate_hf(prompt, num_rollouts)
         elif self.model_type == "anthropic" or self.model_type == "openai":
-            return self.generate_api(prompt, num_rollouts)
+            return self.generate_api(prompt, num_rollouts, isgreedy=isgreedy, **kwargs)
 
     def generate_hf(self, prompt, num_rollouts):
         inputs = self.tokenizer(prompt, return_tensors="pt").to('cuda')
@@ -246,23 +250,36 @@ class LM:
         offsets_ = result
         return (result_,logps_, offsets_), temperature
 
-    def generate_api(self, prompt: str, num_rollouts) -> List[str]:
+    def generate_api(self, prompt: str, num_rollouts, isgreedy=False, special_stop=None, prompt_only=False) -> tuple:
+        """
+        Generate responses using OpenAI or Anthropic API.
+        
+        Returns:
+            A tuple of ((results, logps, offsets), temperature) to match vllm_server format.
+            Note: API-based models don't return token-level logprobs, so logps and offsets are placeholders.
+        """
+        temperature = np.random.uniform(low=self.temperature_range[0], high=self.temperature_range[1])
+        if isgreedy:
+            temperature = 0
+            num_rollouts = 1
+            
         def send_request(prompt):
-            temperature = random.choice(self.temperature_range)
             if self.model_type == "openai":
                 response = self.client.chat.completions.create(
                     model=self.model_name,
                     messages=[{"role": "user", "content": prompt}],
                     max_tokens=self.max_tokens,
-                    temperature=temperature
+                    temperature=temperature,
+                    stop=special_stop
                 )
                 output = response.choices[0].message.content
-            elif self.model_type == "anthropicc":
+            elif self.model_type == "anthropic":
                 response = self.client.messages.create(
                     model=self.model_name,
                     messages=[{"role": "user", "content": prompt}],
                     max_tokens=self.max_tokens,
-                    temperature=temperature
+                    temperature=temperature,
+                    stop_sequences=special_stop if special_stop else []
                 )
                 output = response.content[0].text
             return output
@@ -273,4 +290,8 @@ class LM:
             for future in tqdm(as_completed(futures), total=len(futures)):
                 responses.append(future.result())
 
-        return responses
+        # Return format consistent with generate_vllm_server: (result_, logps_, offsets_), temperature
+        # Note: API models don't provide token-level logprobs, so we use empty placeholders
+        logps_ = [[] for _ in responses]
+        offsets_ = None
+        return (responses, logps_, offsets_), temperature
