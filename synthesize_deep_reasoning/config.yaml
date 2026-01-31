@@ -11,10 +11,11 @@ processing:
   num_expansion: 2
 
 model:
-  # supported model_types: "hf", "openai", "anthropic", "vllm"
+  # supported model_types: "hf", "openai", "anthropic", "vllm", "vllm_server"
   model_type: "vllm_server"
   model_name: "/path/to/Qwen2___5-32B-Instruct"
   model_url: "http://127.0.0.1:8701/v1/completions"
+  # tokenizer_name: "Qwen/Qwen2.5-7B-Instruct"  # Optional: for API models, specify tokenizer for prompt formatting
   model_args:
     beamsearch: 0
     port: 5757
@@ -22,14 +23,18 @@ model:
     top_k: 40
     top_p: 0.85
     temperature_range: [0.8, 0.8]
+    # For API-based models (openai, anthropic), you can optionally specify:
+    # api_key: "your-api-key"  # or set via OPENAI_API_KEY / ANTHROPIC_API_KEY env var
+    # base_url: "https://api.openai.com/v1"  # or set via OPENAI_BASE_URL / ANTHROPIC_BASE_URL env var
   prompt_type: "tokenizer"
 
 judge_model:
-  # supported model_types: "hf", "openai", "anthropic", "vllm"
+  # supported model_types: "hf", "openai", "anthropic", "vllm", "vllm_server"
   use: true
   model_type: "vllm_server"
   model_name: "/path/to/model/for/perplexity"
   model_url: "http://127.0.0.1:8701/v1/completions"
+  # tokenizer_name: "Qwen/Qwen2.5-7B-Instruct"  # Optional: for API models, specify tokenizer for prompt formatting
   model_args:
     beamsearch: 0
     port: 5757
@@ -38,3 +43,29 @@ judge_model:
     top_p: 1
     temperature_range: [1.0, 1.0]
   prompt_type: "tokenizer"
+
+# Example configuration for using OpenAI API as the generator model:
+# model:
+#   model_type: "openai"
+#   model_name: "gpt-4o"
+#   tokenizer_name: "Qwen/Qwen2.5-7B-Instruct"  # Tokenizer for prompt formatting (default if not specified)
+#   model_args:
+#     max_tokens: 8000
+#     top_p: 0.85
+#     temperature_range: [0.8, 0.8]
+#     api_key: "sk-your-api-key"  # Optional, can use OPENAI_API_KEY env var
+#     base_url: "https://api.openai.com/v1"  # Optional, can use OPENAI_BASE_URL env var
+#   prompt_type: "tokenizer"
+
+# Example configuration for using Anthropic API as the generator model:
+# model:
+#   model_type: "anthropic"
+#   model_name: "claude-3-5-sonnet-20241022"
+#   tokenizer_name: "Qwen/Qwen2.5-7B-Instruct"  # Tokenizer for prompt formatting (default if not specified)
+#   model_args:
+#     max_tokens: 8000
+#     top_p: 0.85
+#     temperature_range: [0.8, 0.8]
+#     api_key: "sk-ant-your-api-key"  # Optional, can use ANTHROPIC_API_KEY env var
+#     base_url: "https://api.anthropic.com"  # Optional, can use ANTHROPIC_BASE_URL env var
+#   prompt_type: "tokenizer"
